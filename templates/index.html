@@ -261,20 +261,64 @@
             margin-bottom: 20px;
         }
 
-        .date-btn {
+        .date-item {
+            display: flex;
+            align-items: center;
             background: #172a45;
-            color: var(--text-color);
             border: 1px solid #233554;
-            padding: 8px 15px;
             border-radius: 4px;
+            overflow: hidden;
             white-space: nowrap;
-            cursor: pointer;
         }
 
-        .date-btn.active {
+        .date-btn {
+            background: none;
+            color: var(--text-color);
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .date-item.active {
             background: var(--accent-green);
-            color: var(--bg-color);
             border-color: var(--accent-green);
+        }
+
+        .date-item.active .date-btn {
+            color: var(--bg-color);
+        }
+
+        .date-action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-left: 1px solid #233554;
+            color: #8892b0;
+            padding: 8px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .date-action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .date-action-btn.delete:hover {
+            color: #ff6b6b;
+        }
+
+        .date-item.active .date-action-btn {
+            border-left-color: rgba(0, 0, 0, 0.1);
+            color: rgba(10, 25, 47, 0.7);
+        }
+
+        .date-item.active .date-action-btn:hover {
+            color: var(--bg-color);
         }
 
         /* Lightbox */
@@ -654,18 +698,60 @@
                     }
 
                     dates.forEach((date, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'date-item';
+                        item.id = `date-item-${date}`;
+
                         const btn = document.createElement('button');
                         btn.className = 'date-btn';
                         btn.innerText = formatDate(date);
-                        btn.onclick = () => selectDate(date, btn);
-                        container.appendChild(btn);
+                        btn.onclick = () => selectDate(date, item);
+
+                        const dlBtn = document.createElement('button');
+                        dlBtn.className = 'date-action-btn';
+                        dlBtn.innerHTML = '📥';
+                        dlBtn.title = i18n[currentLang]['dl-zip'];
+                        dlBtn.onclick = (e) => { e.stopPropagation(); downloadDay(date); };
+
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'date-action-btn delete';
+                        delBtn.innerHTML = '🗑️';
+                        delBtn.title = i18n[currentLang]['del-day'];
+                        delBtn.onclick = (e) => { e.stopPropagation(); deleteDay(date); };
+
+                        item.appendChild(btn);
+                        item.appendChild(dlBtn);
+                        item.appendChild(delBtn);
+                        container.appendChild(item);
 
                         // Select first by default
                         if (index === 0 && !currentGalleryDate) {
-                            selectDate(date, btn);
+                            selectDate(date, item);
                         }
                     });
                 });
+        }
+
+        function downloadDay(date) {
+            window.location.href = `/api/gallery/${date}/download`;
+        }
+
+        function deleteDay(date) {
+            if (confirm(i18n[currentLang]['confirm-del'].replace('{date}', formatDate(date)))) {
+                fetch(`/api/gallery/${date}`, { method: 'DELETE' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadDates(); // Reload list
+                            if (currentGalleryDate === date) {
+                                currentGalleryDate = null;
+                                document.getElementById('gallery-images').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #8892b0;">${i18n[currentLang]['select-date']}</p>`;
+                            }
+                        } else {
+                            alert("Error: " + data.error);
+                        }
+                    });
+            }
         }
 
         function formatDate(dateStr) {
@@ -676,12 +762,12 @@
             return `${d}/${m}/${y}`;
         }
 
-        function selectDate(date, btn) {
+        function selectDate(date, item) {
             currentGalleryDate = date;
 
             // UI state
-            document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            document.querySelectorAll('.date-item').forEach(b => b.classList.remove('active'));
+            item.classList.add('active');
 
             fetchImages(date);
         }
@@ -764,7 +850,10 @@
                 'status-stopped': "STOPPED",
                 'status-checking': "Checking...",
                 'stop-to-live': "Stop Timelapse to use Live View",
-                'update-success': "General settings updated!"
+                'update-success': "General settings updated!",
+                'dl-zip': "Download day as ZIP",
+                'del-day': "Delete entire day",
+                'confirm-del': "Are you sure you want to PERMANENTLY delete all images from {date}? This cannot be undone."
             },
             'es': {
                 'title': "Timelapse de Cámara de Tony",
@@ -799,7 +888,10 @@
                 'status-stopped': "DETENIDO",
                 'status-checking': "Comprobando...",
                 'stop-to-live': "Detén el Timelapse para Vista en Vivo",
-                'update-success': "¡Configuración general actualizada!"
+                'update-success': "¡Configuración general actualizada!",
+                'dl-zip': "Descargar día como ZIP",
+                'del-day': "Eliminar día completo",
+                'confirm-del': "¿Estás seguro de que quieres eliminar PERMANENTEMENTE todas las imágenes del {date}? Esta acción no se puede deshacer."
             }
         };
 

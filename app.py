@@ -2,7 +2,11 @@ from flask import Flask, render_template, jsonify, request, send_from_directory,
 import logging
 import sys
 import os
+import shutil
+import io
+import zipfile
 from camera import TimelapseController
+import subprocess
 
 # Configure logging
 logging.basicConfig(
@@ -23,7 +27,7 @@ def get_git_branch():
     try:
         return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
     except Exception:
-        return "v1.1" # Fallback
+        return "v1.2" # Fallback
 
 @app.route('/')
 def index():
@@ -133,6 +137,48 @@ def latest_image():
         return send_from_directory(OUTPUT_DIR, camera.latest_image_path)
     else:
         return "No image captured yet", 404
+
+@app.route('/api/gallery/<date_str>', methods=['DELETE'])
+def delete_gallery_day(date_str):
+    """Delete a specific date folder and all its images."""
+    try:
+        # Safety check: ensure date_str is exactly 8 digits
+        if not (len(date_str) == 8 and date_str.isdigit()):
+            return jsonify({'error': 'Invalid date format'}), 400
+            
+        day_dir = os.path.join(OUTPUT_DIR, date_str)
+        if os.path.exists(day_dir):
+            shutil.rmtree(day_dir)
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Folder not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/gallery/<date_str>/download')
+def download_gallery_day(date_str):
+    """Compress a daily folder into a ZIP and stream it."""
+    try:
+        day_dir = os.path.join(OUTPUT_DIR, date_str)
+        if not os.path.exists(day_dir):
+            return "Folder not found", 404
+
+        # Create ZIP in memory
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(day_dir):
+                for file in files:
+                    if file.endswith('.jpg'):
+                        zf.write(os.path.join(root, file), file)
+        
+        memory_file.seek(0)
+        return Response(
+            memory_file,
+            mimetype="application/zip",
+            headers={"Content-disposition": f"attachment; filename=timelapse_{date_str}.zip"}
+        )
+    except Exception as e:
+        return str(e), 500
 
 if __name__ == '__main__':
     # Listen on all interfaces so it's accessible from outside the Pi

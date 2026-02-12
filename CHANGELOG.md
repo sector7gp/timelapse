@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-02-12
+- [x] v1.2 Feature Enhancements
+    - [x] Add "Download Day as ZIP" feature <!-- id: 70 -->
+    - [x] Add "Delete Day" feature to Gallery <!-- id: 71 -->
+    - [x] Improve UI for action buttons (Download/Delete) with localized tooltips.
+    - [x] Conduct Privacy Audit (verified names, paths, configs are safe for public distribution).
+- [x] Refactoring for Distribution
+    - [x] Refactor backend for on-the-fly ZIP compression and folder removal.
+    - [x] Update version fallbacks in code <!-- id: 63 -->
+    - [x] Clean up logs/debugging prints <!-- id: 64 -->
+- [ ] Documentation Update
+    - [x] Update `README.md` for distribution <!-- id: 65 -->
+    - [x] Update `CHANGELOG.md` for v1.2 <!-- id: 66 -->
+
 ## [1.1.0] - 2026-02-12
 ### Added
 - **Daily Folder Organization**: Images are now stored in subfolders named by date (`images/YYYYMMDD/`).
