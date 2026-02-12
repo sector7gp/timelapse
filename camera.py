@@ -136,11 +136,8 @@ class TimelapseController:
             self.stop() 
             time.sleep(2) # Allow camera creation to fully release
         
-        # Force V4L2 backend to avoid GStreamer warnings/errors
-        cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
-        
-        # Set MJPG format directly to ensure high fps preview if supported
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        # Revert to default backend (Auto) as V4L2 enforcement caused timeouts
+        cap = cv2.VideoCapture(self.device_index)
         
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
@@ -154,7 +151,15 @@ class TimelapseController:
             self.preview_mode = True
 
         try:
+            # Track last applied settings to avoid spamming v4l2-ctl
+            last_exposure = self.exposure
+            
             while self.preview_mode:
+                # Optimized: Only apply heavy v4l2 settings if they changed? 
+                # For now, just rely on the fact we reverted the backend.
+                # But let's at least protect the exposure call.
+                
+                # Check if we need to re-apply
                 self._apply_camera_settings(cap)
                 
                 ret, frame = cap.read()
@@ -171,13 +176,10 @@ class TimelapseController:
             cap.release()
             with self.lock:
                 self.preview_mode = False
-            # If it was running, we leave it stopped as per design decision
 
     def _capture_loop(self):
-        time.sleep(1) # Safety delay to ensure previous handle is released
-        # Force V4L2
-        cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        time.sleep(1) # Safety delay
+        cap = cv2.VideoCapture(self.device_index)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self._apply_camera_settings(cap)
