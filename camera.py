@@ -88,45 +88,45 @@ class TimelapseController:
                  cap.set(cv2.CAP_PROP_AUTO_WB, 0)
                  cap.set(cv2.CAP_PROP_WB_TEMPERATURE, self.white_balance)
 
-            # Exposure via v4l2-ctl (DISABLED due to conflict with OpenCV on propertys)
-            # The v4l2-ctl calls were causing 'select() timeout' errors and video freeze.
-            # We are reverting to standard OpenCV props or disabling it for now.
-            try:
-                # Attempt standard OpenCV exposure if supported
-                if self.exposure != 0:
-                     cap.set(cv2.CAP_PROP_EXPOSURE, self.exposure)
-                # Note: This often doesn't work on Pi, but it doesn't crash the stream.
-            except:
-                pass
-
-            # device_path = f"/dev/video{self.device_index}"
-            # cmd = ['v4l2-ctl', '-d', device_path]
+            # Exposure via v4l2-ctl
+            device_path = f"/dev/video{self.device_index}"
+            cmd = ['v4l2-ctl', '-d', device_path]
             
-            # # Helper to run v4l2 commands without spamming errors
-            # def run_v4l2(args):
-            #     try:
-            #         subprocess.run(cmd + args, capture_output=True, check=True)
-            #         return True
-            #     except subprocess.CalledProcessError:
-            #         return False
+            # Helper to run v4l2 commands without spamming errors
+            def run_v4l2(args):
+                try:
+                    subprocess.run(cmd + args, capture_output=True, check=True)
+                    return True
+                except subprocess.CalledProcessError:
+                    return False
 
-            # if self.exposure == 0:
-            #     # User's camera: value=0 (Auto Mode) implies 0 is Auto.
-            #     # Standard UVC: 3 is Auto. We try both.
-            #     if not run_v4l2(['-c', 'auto_exposure=0']):
-            #         if not run_v4l2(['-c', 'auto_exposure=3']):
-            #             run_v4l2(['-c', 'exposure_auto=3']) # Fallback
-            # else:
-            #     # Manual Exposure
-            #     # User's camera: likely 1 for Manual.
-            #     if not run_v4l2(['-c', 'auto_exposure=1']):
-            #          run_v4l2(['-c', 'exposure_auto=1'])
-            #     
-            #     # Set Absolute Exposure
-            #     # ... (Mapping logic removed for stability) ...
-            #     val = ...
-            #     # ...
+            if self.exposure == 0:
+                # User's camera: value=0 (Auto Mode) implies 0 is Auto.
+                # Standard UVC: 3 is Auto. We try both.
+                if not run_v4l2(['-c', 'auto_exposure=0']):
+                    if not run_v4l2(['-c', 'auto_exposure=3']):
+                        run_v4l2(['-c', 'exposure_auto=3']) # Fallback
+            else:
+                # Manual Exposure
+                # User's camera: likely 1 for Manual.
+                if not run_v4l2(['-c', 'auto_exposure=1']):
+                     run_v4l2(['-c', 'exposure_auto=1'])
                 
+                # Set Absolute Exposure
+                # User's camera: exposure_time_absolute (min=5 max=2500)
+                # Map slider (-10..10) to range (5..2500)
+                # We use a linear mapping from min to max
+                
+                # Normalize slider (-10 to 10) -> (0 to 1)
+                norm = (self.exposure + 10) / 20.0
+                
+                # Map to target range
+                val = int(5 + (norm * (2400 - 5)))
+                
+                if not run_v4l2(['-c', f'exposure_time_absolute={val}']):
+                    if not run_v4l2(['-c', f'exposure_absolute={val}']):
+                        run_v4l2(['-c', f'exposure={val}'])
+
         except Exception as e:
             logger.warning(f"Error applying settings: {e}")
 
