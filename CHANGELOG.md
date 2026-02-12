@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Sequential Naming**: Filenames follow the format `img_YYYYMMDD_HHMM_xxxx.jpg`, with `xxxx` resetting each day.
 - **Web Gallery**: Integrated an interactive gallery in the web UI for browsing past captures.
 - **Lightbox Viewer**: View full-size images from the gallery.
-- **Version Footer**: The web UI now displays the current Git branch in the footer.
+- **Multi-language Support**: Dual language support (English/Spanish) with flag toggles in the footer.
 - **Git Branch Tracking**: Backend logic to automatically fetch the active branch as the version name.
 
 ### Fixed
