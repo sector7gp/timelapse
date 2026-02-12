@@ -73,3 +73,25 @@ To make the script start automatically when the Pi boots:
 
 To check logs: `journalctl -u timelapse.service -f`
 
+
+## API Reference
+
+The system provides a simple REST API on port `5001`.
+
+### Status
+- **GET `/api/status`**: Returns current state, settings, and capture stats.
+
+### Execution Control
+- **POST `/api/control`**: 
+  - `{"action": "start"}`: Start timelapse.
+  - `{"action": "stop"}`: Stop everything.
+  - `{"action": "update", "interval": 10, "width": 1920, "height": 1080}`: Update basics.
+
+### Image Settings
+- **POST `/api/settings`**: 
+  - Body: `{"brightness": 100, "contrast": 110, "saturation": 110, "white_balance": 4000, "auto_wb": true}`
+
+### Media
+- **GET `/latest_image`**: Returns the most recent JPEG shot.
+- **GET `/video_feed`**: MJPEG stream for live previews.
+
