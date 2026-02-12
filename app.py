@@ -18,9 +18,16 @@ logging.getLogger('werkzeug').setLevel(logging.WARNING)
 OUTPUT_DIR = os.path.abspath("images")
 camera = TimelapseController(output_dir=OUTPUT_DIR)
 
+def get_git_branch():
+    """Returns the current git branch name."""
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
+    except Exception:
+        return "v1.1" # Fallback
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', version=get_git_branch())
 
 @app.route('/api/status')
 def get_status():

@@ -298,6 +298,23 @@
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
         }
 
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #233554;
+            color: #8892b0;
+            font-size: 0.8em;
+        }
+
+        .version-badge {
+            background: #172a45;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: var(--accent-blue);
+            font-family: monospace;
+        }
+
         @media (max-width: 600px) {
             .controls-grid {
                 grid-template-columns: 1fr;
@@ -380,6 +397,10 @@
 
         <button class="btn-update" style="margin-top: 25px; background: #233554; color: var(--accent-blue);"
             onclick="openGallery()">📂 Open Image Gallery</button>
+
+        <footer>
+            Tony's Timelapse System &bull; Version: <span class="version-badge">{{ version }}</span>
+        </footer>
     </div>
 
     <!-- Gallery Modal -->
