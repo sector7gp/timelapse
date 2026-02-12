@@ -212,7 +212,7 @@ class TimelapseController:
             if ret:
                 now = datetime.now()
                 date_str = now.strftime("%Y%m%d")
-                time_str = now.strftime("%H%M")
+                time_str = now.strftime("%H%M%S")
                 
                 # Create day folder
                 day_dir = os.path.join(self.output_dir, date_str)

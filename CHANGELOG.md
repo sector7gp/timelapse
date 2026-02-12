@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.1.0] - 2026-02-12
 ### Added
 - **Daily Folder Organization**: Images are now stored in subfolders named by date (`images/YYYYMMDD/`).
-- **Sequential Naming**: Filenames follow the format `img_YYYYMMDD_HHMM_xxxx.jpg`, with `xxxx` resetting each day.
+- **Sequential Naming**: Filenames follow the format `img_YYYYMMDD_HHMMSS_xxxx.jpg`, with `xxxx` resetting each day.
 - **Web Gallery**: Integrated an interactive gallery in the web UI for browsing past captures.
 - **Lightbox Viewer**: View full-size images from the gallery.
 - **Multi-language Support**: Dual language support (English/Spanish) with flag toggles in the footer.
