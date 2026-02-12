@@ -34,7 +34,6 @@ def get_status():
             'brightness': camera.brightness,
             'contrast': camera.contrast,
             'saturation': camera.saturation,
-            'exposure': camera.exposure,
             'white_balance': camera.white_balance,
             'auto_wb': camera.auto_wb
         }
@@ -69,7 +68,6 @@ def update_image_settings():
             brightness=data.get('brightness', 100),
             contrast=data.get('contrast', 100),
             saturation=data.get('saturation', 100),
-            exposure=data.get('exposure', 0),
             white_balance=data.get('white_balance', 4000),
             auto_wb=data.get('auto_wb', False)
         )

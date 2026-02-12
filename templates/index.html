@@ -251,9 +251,7 @@
                 <input type="range" id="saturation" min="0" max="255" oninput="updateRangeVal(this, 'val-saturation')"
                     onchange="updateImageSettings()">
 
-                <label>Exposure <span id="val-exposure" class="range-val">0</span></label>
-                <input type="range" id="exposure" min="-10" max="10" oninput="updateRangeVal(this, 'val-exposure')"
-                    onchange="updateImageSettings()">
+
 
                 <div style="display: flex; align-items: center; margin-top: 10px; margin-bottom:10px;">
                     <input type="checkbox" id="auto_wb" onchange="toggleWB()" style="width: auto; margin:0 10px 0 0;">
@@ -324,7 +322,7 @@
                         document.getElementById('brightness').value = data.settings.brightness;
                         document.getElementById('contrast').value = data.settings.contrast;
                         document.getElementById('saturation').value = data.settings.saturation;
-                        document.getElementById('exposure').value = data.settings.exposure;
+
                         document.getElementById('white_balance').value = data.settings.white_balance;
                         document.getElementById('auto_wb').checked = data.settings.auto_wb;
 
@@ -332,7 +330,7 @@
                         updateRangeVal(document.getElementById('brightness'), 'val-brightness');
                         updateRangeVal(document.getElementById('contrast'), 'val-contrast');
                         updateRangeVal(document.getElementById('saturation'), 'val-saturation');
-                        updateRangeVal(document.getElementById('exposure'), 'val-exposure');
+
                         updateRangeVal(document.getElementById('white_balance'), 'val-wb');
 
                         toggleWB(); // set visual state
@@ -425,7 +423,6 @@
                 brightness: document.getElementById('brightness').value,
                 contrast: document.getElementById('contrast').value,
                 saturation: document.getElementById('saturation').value,
-                exposure: document.getElementById('exposure').value,
                 white_balance: document.getElementById('white_balance').value,
                 auto_wb: document.getElementById('auto_wb').checked
             };

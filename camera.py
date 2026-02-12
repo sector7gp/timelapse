@@ -5,12 +5,14 @@ import threading
 import os
 import subprocess
 from datetime import datetime
+import json
 
 logger = logging.getLogger("Camera")
 
 class TimelapseController:
-    def __init__(self, output_dir="images"):
+    def __init__(self, output_dir="images", settings_file="camera_settings.json"):
         self.output_dir = output_dir
+        self.settings_file = settings_file
         self.interval = 10 * 60 # Default to 10 minutes (in seconds)
         self.is_running = False
         self.preview_mode = False # Flag for Live View
@@ -24,7 +26,7 @@ class TimelapseController:
         self.brightness = 100
         self.contrast = 100
         self.saturation = 100
-        self.exposure = 0 # 0 usually means auto or default, depends on camera
+        # self.exposure = 0 # 0 usually means auto or default, depends on camera
         self.white_balance = 4000 # Auto usually, but specific values needed for manual
         self.auto_wb = True
         
@@ -33,10 +35,47 @@ class TimelapseController:
         self.shots_taken = 0
         self.errors = 0
 
+        self.load_settings() # Load from JSON if exists
+
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         self.settings_changed = True # Dirty flag
+
+    def load_settings(self):
+        try:
+            if os.path.exists(self.settings_file):
+                with open(self.settings_file, 'r') as f:
+                    data = json.load(f)
+                    self.interval = data.get('interval', self.interval)
+                    self.width = data.get('width', self.width)
+                    self.height = data.get('height', self.height)
+                    self.brightness = data.get('brightness', self.brightness)
+                    self.contrast = data.get('contrast', self.contrast)
+                    self.saturation = data.get('saturation', self.saturation)
+                    self.white_balance = data.get('white_balance', self.white_balance)
+                    self.auto_wb = data.get('auto_wb', self.auto_wb)
+                    logger.info("Settings loaded from file.")
+        except Exception as e:
+            logger.error(f"Failed to load settings: {e}")
+
+    def save_settings(self):
+        try:
+            data = {
+                'interval': self.interval,
+                'width': self.width,
+                'height': self.height,
+                'brightness': self.brightness,
+                'contrast': self.contrast,
+                'saturation': self.saturation,
+                'white_balance': self.white_balance,
+                'auto_wb': self.auto_wb
+            }
+            with open(self.settings_file, 'w') as f:
+                json.dump(data, f, indent=4)
+            logger.info("Settings saved to file.")
+        except Exception as e:
+            logger.error(f"Failed to save settings: {e}")
 
     def start(self):
         with self.lock:
@@ -61,21 +100,23 @@ class TimelapseController:
             self.interval = int(float(interval_mins) * 60)
             self.width = int(width)
             self.height = int(height)
+            self.save_settings()
             logger.info(f"Settings updated: Interval={self.interval/60}m, Res={self.width}x{self.height}")
 
-    def update_image_settings(self, brightness, contrast, saturation, exposure, white_balance, auto_wb):
+    def update_image_settings(self, brightness, contrast, saturation, white_balance, auto_wb):
         with self.lock:
             self.brightness = int(brightness)
             self.contrast = int(contrast)
             self.saturation = int(saturation)
-            self.exposure = int(exposure)
+            # exposure removed
             self.white_balance = int(white_balance)
             self.auto_wb = bool(auto_wb)
             self.settings_changed = True
+            self.save_settings()
             logger.info(f"Image settings updated: B={self.brightness} C={self.contrast} S={self.saturation}")
 
     def _apply_camera_settings(self, cap):
-        """Applies current settings to the OpenCV capture object and via v4l2-ctl."""
+        """Applies current settings to the OpenCV capture object."""
         try:
             # Standard OpenCV properties
             cap.set(cv2.CAP_PROP_BRIGHTNESS, self.brightness / 100.0 if self.brightness < 1 else self.brightness) 
@@ -88,45 +129,8 @@ class TimelapseController:
                  cap.set(cv2.CAP_PROP_AUTO_WB, 0)
                  cap.set(cv2.CAP_PROP_WB_TEMPERATURE, self.white_balance)
 
-            # Exposure via v4l2-ctl
-            device_path = f"/dev/video{self.device_index}"
-            cmd = ['v4l2-ctl', '-d', device_path]
-            
-            # Helper to run v4l2 commands without spamming errors
-            def run_v4l2(args):
-                try:
-                    subprocess.run(cmd + args, capture_output=True, check=True)
-                    return True
-                except subprocess.CalledProcessError:
-                    return False
-
-            if self.exposure == 0:
-                # User's camera: value=0 (Auto Mode) implies 0 is Auto.
-                # Standard UVC: 3 is Auto. We try both.
-                if not run_v4l2(['-c', 'auto_exposure=0']):
-                    if not run_v4l2(['-c', 'auto_exposure=3']):
-                        run_v4l2(['-c', 'exposure_auto=3']) # Fallback
-            else:
-                # Manual Exposure
-                # User's camera: likely 1 for Manual.
-                if not run_v4l2(['-c', 'auto_exposure=1']):
-                     run_v4l2(['-c', 'exposure_auto=1'])
+            # Exposure removed per user request for stability
                 
-                # Set Absolute Exposure
-                # User's camera: exposure_time_absolute (min=5 max=2500)
-                # Map slider (-10..10) to range (5..2500)
-                # We use a linear mapping from min to max
-                
-                # Normalize slider (-10 to 10) -> (0 to 1)
-                norm = (self.exposure + 10) / 20.0
-                
-                # Map to target range
-                val = int(5 + (norm * (2400 - 5)))
-                
-                if not run_v4l2(['-c', f'exposure_time_absolute={val}']):
-                    if not run_v4l2(['-c', f'exposure_absolute={val}']):
-                        run_v4l2(['-c', f'exposure={val}'])
-
         except Exception as e:
             logger.warning(f"Error applying settings: {e}")
 
