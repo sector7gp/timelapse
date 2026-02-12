@@ -73,73 +73,66 @@ class TimelapseController:
 
     def _apply_camera_settings(self, cap):
         """Applies current settings to the OpenCV capture object and via v4l2-ctl."""
-        # Note: Property IDs vary by backend, but these are standard for V4L2
         try:
             # Standard OpenCV properties
             cap.set(cv2.CAP_PROP_BRIGHTNESS, self.brightness / 100.0 if self.brightness < 1 else self.brightness) 
             cap.set(cv2.CAP_PROP_CONTRAST, self.contrast)
             cap.set(cv2.CAP_PROP_SATURATION, self.saturation)
             
-            # White Balance via OpenCV usually works
             if self.auto_wb:
                  cap.set(cv2.CAP_PROP_AUTO_WB, 1)
             else:
                  cap.set(cv2.CAP_PROP_AUTO_WB, 0)
                  cap.set(cv2.CAP_PROP_WB_TEMPERATURE, self.white_balance)
 
-            # Exposure via v4l2-ctl (more reliable on Pi)
-            # Try to construct command
-            # exposure_auto: 1=Manual, 3=Auto (V4L2 standard)
-            # exposure_absolute: The value
-            
-            # We need the device path, usually /dev/video0. 
-            # OpenCV index 0 maps to /dev/video0, 1 to /dev/video1, etc.
+            # Exposure via v4l2-ctl
             device_path = f"/dev/video{self.device_index}"
-            
             cmd = ['v4l2-ctl', '-d', device_path]
             
+            # Helper to run v4l2 commands without spamming errors
+            def run_v4l2(args):
+                try:
+                    subprocess.run(cmd + args, capture_output=True, check=True)
+                    return True
+                except subprocess.CalledProcessError:
+                    return False
+
             if self.exposure == 0:
-                # Treat 0 as "Auto Exposure" for simplicity in UI, or just default
-                subprocess.run(cmd + ['-c', 'exposure_auto=3'], check=False)
+                # Try setting Auto Exposure (Standard V4L2: 3=Auto, 1=Manual)
+                # Some cameras use 'exposure_auto', others 'auto_exposure'
+                if not run_v4l2(['-c', 'exposure_auto=3']):
+                    run_v4l2(['-c', 'auto_exposure=3'])
             else:
                 # Manual Exposure
                 # 1. Turn off Auto
-                subprocess.run(cmd + ['-c', 'exposure_auto=1'], check=False)
+                if not run_v4l2(['-c', 'exposure_auto=1']):
+                    run_v4l2(['-c', 'auto_exposure=1'])
                 
                 # 2. Set Absolute Exposure
-                # Map -10 to 10 from UI to actual camera range (often 1-5000 or similar)
-                # This mapping depends HEAVILY on the camera. 
-                # Let's assume a standard webcam might use 100-2000 range.
-                # Center (0) -> 156 (default for many webcams)
-                # We'll map linearly for now, but user might need to tune.
-                # Let's try mapping the UI range (-10 to 10) to a multiplier of a base.
-                
-                # Actually, let's use the UI value as a logarithmic step or direct mapping?
-                # Webcams often have exposure_absolute from 3 to 2047.
-                # Let's try a safer mapping: 
-                # 0 = 156 (Standard)
-                # Each step adds/subtracts significantly.
-                
+                # Map range -10..10 to camera range. 
+                # Safe assumption: 156 is often a default "center" for generic drivers
                 base_exposure = 156
-                # exponential mapping?
-                # let's try linear first: 
-                # val = base + (slider * 50)
-                # -10 -> 156 - 500 = -344 (clamp to 1)
-                # 10 -> 156 + 500 = 656
-                
                 val = max(1, base_exposure + (self.exposure * 50))
-                subprocess.run(cmd + ['-c', f'exposure_absolute={val}'], check=False)
+                
+                if not run_v4l2(['-c', f'exposure_absolute={val}']):
+                    # Fallback for cameras using just 'exposure'
+                    run_v4l2(['-c', f'exposure={val}'])
                 
         except Exception as e:
-            logger.warning(f"Failed to apply some settings: {e}")
+            logger.warning(f"Error applying settings: {e}")
 
     def get_stream(self):
         """Generator function for MJPEG stream. Pauses timelapse loop if running."""
         was_running = self.is_running
         if was_running:
-            self.stop() # Pause actual timelapse to free camera
+            self.stop() 
         
-        cap = cv2.VideoCapture(self.device_index)
+        # Force V4L2 backend to avoid GStreamer warnings/errors
+        cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
+        
+        # Set MJPG format directly to ensure high fps preview if supported
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self._apply_camera_settings(cap)
@@ -153,28 +146,28 @@ class TimelapseController:
 
         try:
             while self.preview_mode:
-                # Re-apply settings on fly if changed (optimized to check dirty flag would be better, but direct set is safe enough)
                 self._apply_camera_settings(cap)
                 
                 ret, frame = cap.read()
                 if not ret:
-                    break
+                    time.sleep(0.1)
+                    continue
                 
-                # Encode as JPEG
                 ret, buffer = cv2.imencode('.jpg', frame)
                 frame = buffer.tobytes()
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                time.sleep(0.1) # Limit FPS for preview
+                time.sleep(0.05) 
         finally:
             cap.release()
             with self.lock:
                 self.preview_mode = False
-            # Resume if it was running? User usually restarts manually to confirm settings.
-            # But let's leave it stopped to avoid confusion.
+            # If it was running, we leave it stopped as per design decision
 
     def _capture_loop(self):
-        cap = cv2.VideoCapture(self.device_index)
+        # Force V4L2
+        cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self._apply_camera_settings(cap)
