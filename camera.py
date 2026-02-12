@@ -113,7 +113,7 @@ class TimelapseController:
             self.auto_wb = bool(auto_wb)
             self.settings_changed = True
             self.save_settings()
-            logger.info(f"Image settings updated: B={self.brightness} C={self.contrast} S={self.saturation}")
+            logger.debug(f"Image settings updated: B={self.brightness} C={self.contrast} S={self.saturation}")
 
     def _apply_camera_settings(self, cap):
         """Applies current settings to the OpenCV capture object."""

@@ -12,6 +12,9 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
+# Silence noisy werkzeug logs
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
 OUTPUT_DIR = os.path.abspath("images")
 camera = TimelapseController(output_dir=OUTPUT_DIR)
 
