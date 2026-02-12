@@ -23,12 +23,21 @@ def index():
 def get_status():
     return jsonify({
         'running': camera.is_running,
-        'interval': camera.interval,
+        'preview': camera.preview_mode,
+        'interval_mins': camera.interval / 60,
         'shots': camera.shots_taken,
         'errors': camera.errors,
         'width': camera.width,
         'height': camera.height,
-        'latest_image': camera.latest_image_path
+        'latest_image': camera.latest_image_path,
+        'settings': {
+            'brightness': camera.brightness,
+            'contrast': camera.contrast,
+            'saturation': camera.saturation,
+            'exposure': camera.exposure,
+            'white_balance': camera.white_balance,
+            'auto_wb': camera.auto_wb
+        }
     })
 
 @app.route('/api/control', methods=['POST'])
@@ -39,17 +48,40 @@ def control():
     if action == 'start':
         camera.start()
     elif action == 'stop':
+        # Stop both timelapse and preview
         camera.stop()
     elif action == 'update':
         try:
-            interval = int(data.get('interval', 10))
+            interval_mins = float(data.get('interval', 10))
             width = int(data.get('width', 1920))
             height = int(data.get('height', 1080))
-            camera.set_settings(interval, width, height)
+            camera.set_settings(interval_mins, width, height)
         except ValueError:
             return jsonify({'error': 'Invalid settings'}), 400
             
     return jsonify({'success': True})
+
+@app.route('/api/settings', methods=['POST'])
+def update_image_settings():
+    data = request.json
+    try:
+        camera.update_image_settings(
+            brightness=data.get('brightness', 100),
+            contrast=data.get('contrast', 100),
+            saturation=data.get('saturation', 100),
+            exposure=data.get('exposure', 0),
+            white_balance=data.get('white_balance', 4000),
+            auto_wb=data.get('auto_wb', False)
+        )
+    except ValueError:
+        return jsonify({'error': 'Invalid values'}), 400
+    return jsonify({'success': True})
+
+@app.route('/video_feed')
+def video_feed():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(camera.get_stream(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/images/<path:filename>')
 def serve_image(filename):

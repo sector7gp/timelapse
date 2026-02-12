@@ -1,24 +1,33 @@
-# Raspberry Pi + USB Webcam Timelapse
+# Raspberry Pi Webcam Timelapse (Tony's Version)
 
-This project allows a Raspberry Pi to create a timelapse using a standard USB Webcam, controlled via a Web Interface.
+This project allows a Raspberry Pi to create a timelapse using a standard USB Webcam, controlled via a modern **Navy Blue Web Interface**.
+
+**Repository**: [https://github.com/sector7gp/timelapse](https://github.com/sector7gp/timelapse)
+
+## Features
+
+1.  **USB Webcam Support**: Uses OpenCV to capture high-quality images.
+2.  **Web Interface**:
+    - **Live View**: Real-time video stream to adjust focus and lighting.
+    - **Pro Controls**: Sliders for **Brightness**, **Contrast**, **Saturation**, **Exposure**, and **White Balance**.
+    - **Presets**: Toggle between **Full HD (1920x1080)** and **HD (1280x720)**.
+    - **Config**: Set interval in **Minutes**.
+    - **Status**: Monitor shots taken and errors.
+3.  **Background Processing**: Image capture runs in a separate thread.
+4.  **Robust Error Handling**: Automatically retries on capture failures.
 
 ## Setup
 
 1.  **Hardware**:
     *   Raspberry Pi (Zero W or other)
-    *   USB Webcam (Full HD recommended)
-    *   Sufficient SD Card space for images
+    *   USB Webcam
+    *   Sufficient SD Card space
 
-2.  **Verify Camera**:
-    *   Plug in the camera.
-    *   Run `ls /dev/video*`. You should see `/dev/video0`.
-
-3.  **Dependencies**:
+2.  **Dependencies**:
     *   Install OpenCV (headless) and Flask:
     ```bash
     pip3 install -r requirements.txt
     ```
-    *   *Note for Pi Zero*: If pip fails on OpenCV, try `sudo apt install python3-opencv`.
 
 ## Usage
 
@@ -30,11 +39,12 @@ This project allows a Raspberry Pi to create a timelapse using a standard USB We
 2.  Open your browser and navigate to:
     `http://<RASPBERRY_PI_IP>:5000`
 
-## Features
-- **Live Preview**: Shows the latest captured image.
-- **Controls**: Start/Stop the timelapse.
-- **Settings**: Adjust Interval and Resolution on the fly.
-- **Status**: View total shots taken and errors.
+### Using Live View
+1.  Ensure the Timelapse is **STOPPED**.
+2.  Click **"Start Live View"**.
+3.  Adjust the sliders (Brightness, Contrast, etc.) and see the changes in real-time.
+4.  Click **"Close Live View"** when satisfied.
+5.  Click **"Start Timelapse"** to begin capturing.
 
 ## Storage Note
 Images are saved to the `images/` directory. Ensure you have space!
