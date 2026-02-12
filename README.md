@@ -8,10 +8,11 @@ This project allows a Raspberry Pi to create a timelapse using a standard USB We
 
 1.  **USB Webcam Support**: Uses OpenCV to capture high-quality images.
 2.  **Web Interface**:
-    - **Live View**: Real-time video stream to adjust focus and lighting.
-    - **Pro Controls**: Sliders for **Brightness**, **Contrast**, **Saturation**, **Exposure**, and **White Balance**.
-    - **Presets**: Toggle between **Full HD (1920x1080)** and **HD (1280x720)**.
-    - **Config**: Set interval in **Minutes**.
+    - **Live Focus Mode**: When "Live View" runs, the UI transforms (hiding non-essentials) so settings are right below the video. Perfect for mobile use!
+    - **Pro Controls**:
+        - **Exposure**: Uses robust `v4l2-ctl` commands for reliable hardware control.
+        - **Other Settings**: Brightness, Contrast, Saturation, White Balance.
+    - **Presets**: Full HD / HD resolutions.
     - **Status**: Monitor shots taken and errors.
 3.  **Background Processing**: Image capture runs in a separate thread.
 4.  **Robust Error Handling**: Automatically retries on capture failures.
@@ -28,6 +29,10 @@ This project allows a Raspberry Pi to create a timelapse using a standard USB We
     ```bash
     pip3 install -r requirements.txt
     ```
+    *   **Crucial**: Install `v4l-utils` for exposure control:
+    ```bash
+    sudo apt update && sudo apt install v4l-utils
+    ```
 
 ## Usage
 
@@ -40,11 +45,11 @@ This project allows a Raspberry Pi to create a timelapse using a standard USB We
     `http://<RASPBERRY_PI_IP>:5000`
 
 ### Using Live View
-1.  Ensure the Timelapse is **STOPPED**.
-2.  Click **"Start Live View"**.
-3.  Adjust the sliders (Brightness, Contrast, etc.) and see the changes in real-time.
-4.  Click **"Close Live View"** when satisfied.
-5.  Click **"Start Timelapse"** to begin capturing.
-
-## Storage Note
-Images are saved to the `images/` directory. Ensure you have space!
+1.  Click **"Start Live View"**.
+2.  The interface switches to **Focus Mode**:
+    -   Video Feed at the top.
+    -   Sliders immediately below.
+    -   Timelapse controls are hidden.
+3.  Adjust sliders to perfect your shot.
+    -   *Tip*: Setting Exposure will disable Auto-Exposure temporarily.
+4.  Click **"Close Live View"** to return to the main dashboard.

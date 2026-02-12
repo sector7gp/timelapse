@@ -71,10 +71,6 @@ class TimelapseController:
             self.auto_wb = bool(auto_wb)
             logger.info(f"Image settings updated: B={self.brightness} C={self.contrast} S={self.saturation}")
 
-import subprocess
-
-# ... imports ...
-
     def _apply_camera_settings(self, cap):
         """Applies current settings to the OpenCV capture object and via v4l2-ctl."""
         # Note: Property IDs vary by backend, but these are standard for V4L2
