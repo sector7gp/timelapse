@@ -36,6 +36,8 @@ class TimelapseController:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
+        self.settings_changed = True # Dirty flag
+
     def start(self):
         with self.lock:
             if self.is_running:
@@ -69,6 +71,7 @@ class TimelapseController:
             self.exposure = int(exposure)
             self.white_balance = int(white_balance)
             self.auto_wb = bool(auto_wb)
+            self.settings_changed = True
             logger.info(f"Image settings updated: B={self.brightness} C={self.contrast} S={self.saturation}")
 
     def _apply_camera_settings(self, cap):
@@ -151,16 +154,12 @@ class TimelapseController:
             self.preview_mode = True
 
         try:
-            # Track last applied settings to avoid spamming v4l2-ctl
-            last_exposure = self.exposure
-            
             while self.preview_mode:
-                # Optimized: Only apply heavy v4l2 settings if they changed? 
-                # For now, just rely on the fact we reverted the backend.
-                # But let's at least protect the exposure call.
-                
-                # Check if we need to re-apply
-                self._apply_camera_settings(cap)
+                # Optimized: Only apply heavy v4l2 settings if they changed
+                if self.settings_changed:
+                    self._apply_camera_settings(cap)
+                    with self.lock:
+                        self.settings_changed = False
                 
                 ret, frame = cap.read()
                 if not ret:
@@ -183,6 +182,8 @@ class TimelapseController:
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self._apply_camera_settings(cap)
+        with self.lock:
+             self.settings_changed = False
         
         if not cap.isOpened():
             logger.error("Could not open camera.")
@@ -195,8 +196,11 @@ class TimelapseController:
         while self.is_running:
             start_time = time.time()
             
-            # Re-apply settings before shot
-            self._apply_camera_settings(cap)
+            # Re-apply settings before shot only if changed
+            if self.settings_changed:
+                self._apply_camera_settings(cap)
+                with self.lock:
+                    self.settings_changed = False
 
             # Flush buffer
             for _ in range(2):
