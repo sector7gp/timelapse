@@ -98,25 +98,33 @@ class TimelapseController:
                     return False
 
             if self.exposure == 0:
-                # Try setting Auto Exposure (Standard V4L2: 3=Auto, 1=Manual)
-                # Some cameras use 'exposure_auto', others 'auto_exposure'
-                if not run_v4l2(['-c', 'exposure_auto=3']):
-                    run_v4l2(['-c', 'auto_exposure=3'])
+                # User's camera: value=0 (Auto Mode) implies 0 is Auto.
+                # Standard UVC: 3 is Auto. We try both.
+                if not run_v4l2(['-c', 'auto_exposure=0']):
+                    if not run_v4l2(['-c', 'auto_exposure=3']):
+                        run_v4l2(['-c', 'exposure_auto=3']) # Fallback
             else:
                 # Manual Exposure
-                # 1. Turn off Auto
-                if not run_v4l2(['-c', 'exposure_auto=1']):
-                    run_v4l2(['-c', 'auto_exposure=1'])
+                # User's camera: likely 1 for Manual.
+                if not run_v4l2(['-c', 'auto_exposure=1']):
+                     run_v4l2(['-c', 'exposure_auto=1'])
                 
-                # 2. Set Absolute Exposure
-                # Map range -10..10 to camera range. 
-                # Safe assumption: 156 is often a default "center" for generic drivers
-                base_exposure = 156
-                val = max(1, base_exposure + (self.exposure * 50))
+                # Set Absolute Exposure
+                # User's camera: exposure_time_absolute (min=5 max=2500)
+                # Map slider (-10..10) to range (5..2500)
+                # We use a linear mapping from min to max
+                # Slider -10 -> 5
+                # Slider 10 -> 2400
                 
-                if not run_v4l2(['-c', f'exposure_absolute={val}']):
-                    # Fallback for cameras using just 'exposure'
-                    run_v4l2(['-c', f'exposure={val}'])
+                # Normalize slider (-10 to 10) -> (0 to 1)
+                norm = (self.exposure + 10) / 20.0
+                
+                # Map to target range
+                val = int(5 + (norm * (2400 - 5)))
+                
+                if not run_v4l2(['-c', f'exposure_time_absolute={val}']):
+                    if not run_v4l2(['-c', f'exposure_absolute={val}']):
+                        run_v4l2(['-c', f'exposure={val}'])
                 
         except Exception as e:
             logger.warning(f"Error applying settings: {e}")
@@ -126,6 +134,7 @@ class TimelapseController:
         was_running = self.is_running
         if was_running:
             self.stop() 
+            time.sleep(2) # Allow camera creation to fully release
         
         # Force V4L2 backend to avoid GStreamer warnings/errors
         cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
@@ -165,6 +174,7 @@ class TimelapseController:
             # If it was running, we leave it stopped as per design decision
 
     def _capture_loop(self):
+        time.sleep(1) # Safety delay to ensure previous handle is released
         # Force V4L2
         cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
