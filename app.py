@@ -84,6 +84,37 @@ def video_feed():
     return Response(camera.get_stream(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/api/gallery')
+def get_gallery_dates():
+    """List all date folders in the images directory."""
+    try:
+        if not os.path.exists(OUTPUT_DIR):
+            return jsonify([])
+        
+        # List only directories that are 8-digit dates (YYYYMMDD)
+        dates = []
+        for d in os.listdir(OUTPUT_DIR):
+            if os.path.isdir(os.path.join(OUTPUT_DIR, d)) and len(d) == 8 and d.isdigit():
+                dates.append(d)
+        
+        return jsonify(sorted(dates, reverse=True))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/gallery/<date_str>')
+def get_gallery_images(date_str):
+    """List all images in a specific date folder."""
+    try:
+        day_dir = os.path.join(OUTPUT_DIR, date_str)
+        if not os.path.exists(day_dir):
+            return jsonify([])
+        
+        images = [f for f in os.listdir(day_dir) if f.endswith('.jpg')]
+        # Sort by filename which includes time and sequence
+        return jsonify(sorted(images, reverse=True))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/images/<path:filename>')
 def serve_image(filename):
     return send_from_directory(OUTPUT_DIR, filename)
@@ -91,6 +122,7 @@ def serve_image(filename):
 @app.route('/latest_image')
 def latest_image():
     if camera.latest_image_path:
+        # camera.latest_image_path now contains "YYYYMMDD/filename"
         return send_from_directory(OUTPUT_DIR, camera.latest_image_path)
     else:
         return "No image captured yet", 404

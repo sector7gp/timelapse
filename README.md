@@ -55,10 +55,10 @@ To make the script start automatically when the Pi boots:
    After=network.target
 
    [Service]
-   WorkingDirectory=/Users/sector7gp/Library/CloudStorage/GoogleDrive-sector7gp@gmail.com/My Drive/Codigo/Python/timelapse
+   WorkingDirectory=/Python/timelapse
    ExecStart=/usr/bin/python3 app.py
    Restart=always
-   User=sector7gp
+   User=root
 
    [Install]
    WantedBy=multi-user.target
