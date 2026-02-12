@@ -73,7 +73,7 @@ class TimelapseController:
             }
             with open(self.settings_file, 'w') as f:
                 json.dump(data, f, indent=4)
-            logger.info("Settings saved to file.")
+            logger.debug("Settings saved to file.")
         except Exception as e:
             logger.error(f"Failed to save settings: {e}")
 
