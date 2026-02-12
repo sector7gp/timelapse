@@ -190,9 +190,162 @@
             color: white;
         }
 
+        /* Gallery Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(2, 12, 27, 0.95);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            margin: 5% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 1000px;
+            background: var(--container-bg);
+            border-radius: 12px;
+            border: 1px solid #233554;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #233554;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .close {
+            color: #8892b0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--accent-green);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #233554;
+            transition: transform 0.2s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-green);
+        }
+
+        .date-selector {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .date-btn {
+            background: #172a45;
+            color: var(--text-color);
+            border: 1px solid #233554;
+            padding: 8px 15px;
+            border-radius: 4px;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .date-btn.active {
+            background: var(--accent-green);
+            color: var(--bg-color);
+            border-color: var(--accent-green);
+        }
+
+        /* Lightbox */
+        #lightbox {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+        }
+
+        #lightbox img {
+            max-width: 95%;
+            max-height: 95%;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #233554;
+            color: #8892b0;
+            font-size: 0.8em;
+        }
+
+        .version-badge {
+            background: #172a45;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: var(--accent-blue);
+            font-family: monospace;
+            margin-right: 15px;
+        }
+
+        .lang-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.4em;
+            padding: 0 5px;
+            opacity: 0.6;
+            transition: opacity 0.2s, transform 0.2s;
+            vertical-align: middle;
+            width: auto;
+            margin: 0;
+        }
+
+        .lang-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .lang-btn.active {
+            opacity: 1;
+            filter: drop-shadow(0 0 5px var(--accent-green));
+        }
+
         @media (max-width: 600px) {
             .controls-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
         }
     </style>
@@ -200,12 +353,13 @@
 
 <body>
     <div class="container">
-        <h1>Tony's Webcam Timelapse</h1>
+        <h1 data-i18n="title">Tony's Webcam Timelapse</h1>
 
         <div class="preview">
-            <span class="live-badge" id="live-indicator">LIVE PREVIEW</span>
+            <span class="live-badge" id="live-indicator" data-i18n="live-badge">LIVE PREVIEW</span>
             <img id="main-display" src="" alt="Waiting for capture..." onerror="this.style.display='none'">
-            <div id="no-image-text" style="display:none; color: #8892b0;">No images captured yet</div>
+            <div id="no-image-text" style="display:none; color: #8892b0;" data-i18n="no-image">No images captured yet
+            </div>
         </div>
 
         <button class="btn-live" id="btn-live" onclick="toggleLiveView()">Start Live View (Adjust Settings)</button>
@@ -213,23 +367,25 @@
         <div class="controls-grid">
             <!-- Left Column: Status & Timelapse Config -->
             <div class="panel" id="timelapse-panel">
-                <h3>Timelapse Control</h3>
-                <p>State: <span id="status-state" class="badge bg-grey">Checking...</span></p>
-                <p>Shots Taken: <span id="status-shots" style="color: var(--accent-green)">0</span></p>
-                <p>Errors: <span id="status-errors" style="color: #ff6b6b">0</span></p>
+                <h3 data-i18n="panel-timelapse">Timelapse Control</h3>
+                <p><span data-i18n="state">State</span>: <span id="status-state" class="badge bg-grey"
+                        data-i18n="status-checking">Checking...</span></p>
+                <p><span data-i18n="shots">Shots Taken</span>: <span id="status-shots"
+                        style="color: var(--accent-green)">0</span></p>
+                <p><span data-i18n="errors">Errors</span>: <span id="status-errors" style="color: #ff6b6b">0</span></p>
 
                 <hr style="border-color: #233554">
 
-                <label>Interval (Minutes)</label>
+                <label data-i18n="interval">Interval (Minutes)</label>
                 <input type="number" id="interval" value="10" min="0.1" step="0.1">
 
-                <label>Resolution</label>
+                <label data-i18n="resolution">Resolution</label>
                 <select id="resolution">
                     <option value="1920x1080">Full HD (1920x1080)</option>
                     <option value="1280x720">HD (1280x720)</option>
                 </select>
 
-                <button class="btn-update" onclick="updateGenerals()">Update Config</button>
+                <button class="btn-update" onclick="updateGenerals()" data-i18n="btn-update">Update Config</button>
                 <div id="action-buttons" style="margin-top: 15px;">
                     <button class="btn-start" onclick="toggleTimelapse('start')">Start Timelapse</button>
                 </div>
@@ -237,17 +393,20 @@
 
             <!-- Right Column: Image Settings -->
             <div class="panel" id="settings-panel">
-                <h3>Image Settings</h3>
+                <h3 data-i18n="panel-settings">Image Settings</h3>
 
-                <label>Brightness <span id="val-brightness" class="range-val">100</span></label>
+                <label><span data-i18n="brightness">Brightness</span> <span id="val-brightness"
+                        class="range-val">100</span></label>
                 <input type="range" id="brightness" min="-100" max="100"
                     oninput="updateRangeVal(this, 'val-brightness')" onchange="updateImageSettings()">
 
-                <label>Contrast <span id="val-contrast" class="range-val">100</span></label>
+                <label><span data-i18n="contrast">Contrast</span> <span id="val-contrast"
+                        class="range-val">100</span></label>
                 <input type="range" id="contrast" min="0" max="255" oninput="updateRangeVal(this, 'val-contrast')"
                     onchange="updateImageSettings()">
 
-                <label>Saturation <span id="val-saturation" class="range-val">100</span></label>
+                <label><span data-i18n="saturation">Saturation</span> <span id="val-saturation"
+                        class="range-val">100</span></label>
                 <input type="range" id="saturation" min="0" max="255" oninput="updateRangeVal(this, 'val-saturation')"
                     onchange="updateImageSettings()">
 
@@ -255,22 +414,58 @@
 
                 <div style="display: flex; align-items: center; margin-top: 10px; margin-bottom:10px;">
                     <input type="checkbox" id="auto_wb" onchange="toggleWB()" style="width: auto; margin:0 10px 0 0;">
-                    <label style="margin:0;">Auto White Balance</label>
+                    <label style="margin:0;" data-i18n="auto-wb">Auto White Balance</label>
                 </div>
 
                 <div id="wb-manual-container">
-                    <label>White Balance (Temp) <span id="val-wb" class="range-val">4000</span></label>
+                    <label><span data-i18n="wb-manual">White Balance (Temp)</span> <span id="val-wb"
+                            class="range-val">4000</span></label>
                     <input type="range" id="white_balance" min="2800" max="6500" step="100"
                         oninput="updateRangeVal(this, 'val-wb')" onchange="updateImageSettings()">
                 </div>
             </div>
         </div>
+
+        <button class="btn-update" style="margin-top: 25px; background: #233554; color: var(--accent-blue);"
+            onclick="openGallery()" data-i18n="open-gallery">📂 Open Image Gallery</button>
+
+        <footer>
+            <span data-i18n="footer-text">Tony's Timelapse System</span> &bull;
+            <span class="version-badge">{{ version }}</span>
+            <button class="lang-btn" onclick="setLanguage('en')" title="English">🇺🇸</button>
+            <button class="lang-btn" onclick="setLanguage('es')" title="Español">🇪🇸</button>
+        </footer>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div id="gallery-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin:0; color: var(--accent-green);" data-i18n="gallery-title">Image Gallery</h2>
+                <span class="close" onclick="closeGallery()">&times;</span>
+            </div>
+
+            <div id="gallery-dates" class="date-selector">
+                <!-- Data populated via JS -->
+            </div>
+
+            <div id="gallery-images" class="gallery-grid">
+                <!-- Images populated via JS -->
+                <p style="grid-column: 1/-1; text-align: center; color: #8892b0;">Select a date to view images</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="this.style.display='none'">
+        <img id="lightbox-img" src="">
     </div>
 
     <script>
         let isRunning = false;
         let isLive = false;
         let pollingInterval = null;
+        let currentLang = localStorage.getItem('pref_lang') || 'es';
 
         function updateRangeVal(input, displayId) {
             document.getElementById(displayId).textContent = input.value;
@@ -294,18 +489,18 @@
                     // Status Badge
                     const badge = document.getElementById('status-state');
                     if (data.running) {
-                        badge.textContent = "RUNNING";
+                        badge.textContent = i18n[currentLang]['status-running'];
                         badge.className = "badge bg-green";
-                        document.getElementById('action-buttons').innerHTML = '<button class="btn-stop" onclick="toggleTimelapse(\'stop\')">Stop Timelapse</button>';
+                        document.getElementById('action-buttons').innerHTML = `<button class="btn-stop" onclick="toggleTimelapse('stop')">${i18n[currentLang]['btn-stop']}</button>`;
                         document.getElementById('btn-live').disabled = true;
-                        document.getElementById('btn-live').textContent = "Stop Timelapse to use Live View";
+                        document.getElementById('btn-live').textContent = i18n[currentLang]['stop-to-live'];
                         document.getElementById('btn-live').style.background = "#555";
                     } else {
-                        badge.textContent = "STOPPED";
+                        badge.textContent = i18n[currentLang]['status-stopped'];
                         badge.className = "badge bg-red";
-                        document.getElementById('action-buttons').innerHTML = '<button class="btn-start" onclick="toggleTimelapse(\'start\')">Start Timelapse</button>';
+                        document.getElementById('action-buttons').innerHTML = `<button class="btn-start" onclick="toggleTimelapse('start')">${i18n[currentLang]['btn-start']}</button>`;
                         document.getElementById('btn-live').disabled = false;
-                        document.getElementById('btn-live').textContent = "Start Live View (Adjust Settings)";
+                        document.getElementById('btn-live').textContent = i18n[currentLang]['live-btn-start'];
                         document.getElementById('btn-live').style.background = "#64ffda";
                     }
 
@@ -360,7 +555,7 @@
                 isLive = false;
                 img.src = ""; // Stop stream
                 badge.style.display = 'none';
-                btn.textContent = "Start Live View (Adjust Settings)";
+                btn.textContent = i18n[currentLang]['live-btn-start'];
                 btn.style.background = "#64ffda";
                 btn.style.color = "#0a192f";
 
@@ -379,7 +574,7 @@
                 document.getElementById('no-image-text').style.display = 'none';
                 img.src = "/video_feed"; // Start MJPEG stream
                 badge.style.display = 'block';
-                btn.textContent = "Close Live View";
+                btn.textContent = i18n[currentLang]['live-btn-stop'];
                 btn.style.background = "#dc3545";
                 btn.style.color = "white";
 
@@ -412,7 +607,7 @@
                     height: h
                 })
             }).then(() => {
-                alert("General settings updated!");
+                alert(i18n[currentLang]['update-success']);
                 fetchStatus();
             });
         }
@@ -433,6 +628,225 @@
                 body: JSON.stringify(payload)
             });
         }
+
+        // --- Gallery Logic ---
+        let currentGalleryDate = null;
+
+        function openGallery() {
+            document.getElementById('gallery-modal').style.display = 'block';
+            fetchDates();
+        }
+
+        function closeGallery() {
+            document.getElementById('gallery-modal').style.display = 'none';
+        }
+
+        function fetchDates() {
+            fetch('/api/gallery')
+                .then(r => r.json())
+                .then(dates => {
+                    const container = document.getElementById('gallery-dates');
+                    container.innerHTML = '';
+
+                    if (dates.length === 0) {
+                        container.innerHTML = '<p>No captures found.</p>';
+                        return;
+                    }
+
+                    dates.forEach((date, index) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'date-btn';
+                        btn.innerText = formatDate(date);
+                        btn.onclick = () => selectDate(date, btn);
+                        container.appendChild(btn);
+
+                        // Select first by default
+                        if (index === 0 && !currentGalleryDate) {
+                            selectDate(date, btn);
+                        }
+                    });
+                });
+        }
+
+        function formatDate(dateStr) {
+            // YYYYMMDD -> DD/MM/YYYY
+            const y = dateStr.substring(0, 4);
+            const m = dateStr.substring(4, 6);
+            const d = dateStr.substring(6, 8);
+            return `${d}/${m}/${y}`;
+        }
+
+        function selectDate(date, btn) {
+            currentGalleryDate = date;
+
+            // UI state
+            document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            fetchImages(date);
+        }
+
+        function fetchImages(date) {
+            const container = document.getElementById('gallery-images');
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Loading images...</p>';
+
+            fetch(`/api/gallery/${date}`)
+                .then(r => r.json())
+                .then(images => {
+                    container.innerHTML = '';
+                    if (images.length === 0) {
+                        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No images in this folder</p>';
+                        return;
+                    }
+
+                    images.forEach(imgName => {
+                        const div = document.createElement('div');
+                        div.className = 'gallery-item';
+
+                        const img = document.createElement('img');
+                        img.src = `/images/${date}/${imgName}`;
+                        img.loading = 'lazy';
+                        img.onclick = () => showLightbox(img.src);
+
+                        div.appendChild(img);
+                        container.appendChild(div);
+                    });
+                });
+        }
+
+        function showLightbox(src) {
+            const lb = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-img');
+            img.src = src;
+            lb.style.display = 'flex';
+        }
+
+        // Close on escape
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeGallery();
+                document.getElementById('lightbox').style.display = 'none';
+            }
+        });
+
+        // --- Translation Logic ---
+        const i18n = {
+            'en': {
+                'title': "Tony's Webcam Timelapse",
+                'live-btn-start': "Start Live View (Adjust Settings)",
+                'live-btn-stop': "Close Live View",
+                'live-badge': "LIVE PREVIEW",
+                'no-image': "No images captured yet",
+                'panel-timelapse': "Timelapse Control",
+                'panel-settings': "Image Settings",
+                'state': "State",
+                'shots': "Shots Taken",
+                'errors': "Errors",
+                'interval': "Interval (Minutes)",
+                'resolution': "Resolution",
+                'btn-update': "Update Config",
+                'btn-start': "Start Timelapse",
+                'btn-stop': "Stop Timelapse",
+                'brightness': "Brightness",
+                'contrast': "Contrast",
+                'saturation': "Saturation",
+                'auto-wb': "Auto White Balance",
+                'wb-manual': "White Balance (Temp)",
+                'open-gallery': "📂 Open Image Gallery",
+                'footer-text': "Tony's Timelapse System",
+                'version': "Version",
+                'gallery-title': "Image Gallery",
+                'loading': "Loading images...",
+                'no-captures': "No captures found.",
+                'select-date': "Select a date to view images",
+                'no-images-folder': "No images in this folder",
+                'status-running': "RUNNING",
+                'status-stopped': "STOPPED",
+                'status-checking': "Checking...",
+                'stop-to-live': "Stop Timelapse to use Live View",
+                'update-success': "General settings updated!"
+            },
+            'es': {
+                'title': "Timelapse de Cámara de Tony",
+                'live-btn-start': "Iniciar Vista en Vivo (Ajustar)",
+                'live-btn-stop': "Cerrar Vista en Vivo",
+                'live-badge': "VISTA EN VIVO",
+                'no-image': "No hay imágenes capturadas",
+                'panel-timelapse': "Control de Timelapse",
+                'panel-settings': "Ajustes de Imagen",
+                'state': "Estado",
+                'shots': "Fotos Tomadas",
+                'errors': "Errores",
+                'interval': "Intervalo (Minutos)",
+                'resolution': "Resolución",
+                'btn-update': "Actualizar Config",
+                'btn-start': "Iniciar Timelapse",
+                'btn-stop': "Detener Timelapse",
+                'brightness': "Brillo",
+                'contrast': "Contraste",
+                'saturation': "Saturación",
+                'auto-wb': "Balance de Blancos Auto",
+                'wb-manual': "Balance de Blancos (Temp)",
+                'open-gallery': "📂 Abrir Galería de Imágenes",
+                'footer-text': "Sistema de Timelapse de Tony",
+                'version': "Versión",
+                'gallery-title': "Galería de Imágenes",
+                'loading': "Cargando imágenes...",
+                'no-captures': "No se encontraron capturas.",
+                'select-date': "Selecciona una fecha para ver imágenes",
+                'no-images-folder': "No hay imágenes en esta carpeta",
+                'status-running': "EN EJECUCIÓN",
+                'status-stopped': "DETENIDO",
+                'status-checking': "Comprobando...",
+                'stop-to-live': "Detén el Timelapse para Vista en Vivo",
+                'update-success': "¡Configuración general actualizada!"
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('pref_lang', lang);
+
+            // Update all elements with data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang][key]) {
+                    el.innerText = i18n[lang][key];
+                }
+            });
+
+            // Update complex components (titles, buttons with icons)
+            document.getElementById('btn-live').innerText = isLive ? i18n[lang]['live-btn-stop'] : i18n[lang]['live-btn-start'];
+            if (!isLive && isRunning) {
+                document.getElementById('btn-live').innerText = i18n[lang]['stop-to-live'];
+            }
+
+            // Update action buttons (Start/Stop timelapse)
+            if (isRunning) {
+                document.getElementById('action-buttons').innerHTML = `<button class="btn-stop" onclick="toggleTimelapse('stop')">${i18n[lang]['btn-stop']}</button>`;
+            } else {
+                document.getElementById('action-buttons').innerHTML = `<button class="btn-start" onclick="toggleTimelapse('start')">${i18n[lang]['btn-start']}</button>`;
+            }
+
+            // Update status badge text
+            updateStatusText(lang);
+
+            // Update flags active state
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.lang-btn[onclick="setLanguage('${lang}')"]`).classList.add('active');
+        }
+
+        function updateStatusText(lang) {
+            const badge = document.getElementById('status-state');
+            if (isRunning) {
+                badge.textContent = i18n[lang]['status-running'];
+            } else {
+                badge.textContent = i18n[lang]['status-stopped'];
+            }
+        }
+
+        // Initialize language
+        document.addEventListener('DOMContentLoaded', () => setLanguage(currentLang));
 
         // Poll status every 2 seconds
         pollingInterval = setInterval(fetchStatus, 2000);

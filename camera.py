@@ -210,16 +210,27 @@ class TimelapseController:
             
             ret, frame = cap.read()
             if ret:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"img_{timestamp}.jpg"
-                filepath = os.path.join(self.output_dir, filename)
+                now = datetime.now()
+                date_str = now.strftime("%Y%m%d")
+                time_str = now.strftime("%H%M%S")
+                
+                # Create day folder
+                day_dir = os.path.join(self.output_dir, date_str)
+                if not os.path.exists(day_dir):
+                    os.makedirs(day_dir)
+                
+                filename = f"img_{date_str}_{time_str}.jpg"
+                filepath = os.path.join(day_dir, filename)
+                
+                # Relative path for the web app
+                rel_path = f"{date_str}/{filename}"
                 
                 try:
                     cv2.imwrite(filepath, frame)
                     with self.lock:
-                        self.latest_image_path = filename 
+                        self.latest_image_path = rel_path 
                         self.shots_taken += 1
-                    logger.info(f"Captured {filename}")
+                    logger.info(f"Captured {rel_path}")
                 except Exception as e:
                     logger.error(f"Error saving image: {e}")
                     with self.lock:
