@@ -219,14 +219,7 @@ class TimelapseController:
                 if not os.path.exists(day_dir):
                     os.makedirs(day_dir)
                 
-                # Sequential number (count files in day_dir)
-                try:
-                    existing_files = [f for f in os.listdir(day_dir) if f.endswith(".jpg")]
-                    seq_num = len(existing_files) + 1
-                except Exception:
-                    seq_num = 1
-                
-                filename = f"img_{date_str}_{time_str}_{seq_num:04d}.jpg"
+                filename = f"img_{date_str}_{time_str}.jpg"
                 filepath = os.path.join(day_dir, filename)
                 
                 # Relative path for the web app
