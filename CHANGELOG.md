@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-03-07
+### Added
+- **HTTPS Support (Documentation)**: Added Nginx reverse proxy templates and instructions for enabling secure access via Let's Encrypt.
+- **Nginx Config**: Included `nginx/timelapse.conf` for standard reverse proxying with WebSocket support for MJPEG streams.
+
 ## [1.3.0] - 2026-03-07
 ### Added
 - **Camera Rotation**: Added support for 0°, 90°, 180°, and 270° rotation. This affects both the Live View preview and the saved timelapse images.
