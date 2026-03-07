@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 images/
+camera_settings.json
 *.log
 .DS_Store
 .venv
