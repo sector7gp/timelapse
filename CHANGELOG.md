@@ -7,7 +7,6 @@ All notable changes to this project will be documented in this file.
 - **Camera Rotation**: Added support for 0°, 90°, 180°, and 270° rotation. This affects both the Live View preview and the saved timelapse images.
 - **Rotation Persistent Setting**: The rotation choice is saved to `camera_settings.json` and persisted across restarts.
 - **Bilingual Rotation UI**: Localized rotation labels in English and Spanish.
-
 ## [1.2.0] - 2026-02-12
 ### Added
 - **ZIP Download**: Users can now download a whole day of captures in a single ZIP file directly from the Gallery.
