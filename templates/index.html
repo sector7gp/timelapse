@@ -423,6 +423,14 @@
                     <input type="range" id="white_balance" min="2800" max="6500" step="100"
                         oninput="updateRangeVal(this, 'val-wb')" onchange="updateImageSettings()">
                 </div>
+
+                <label data-i18n="rotation">Rotation</label>
+                <select id="rotation" onchange="updateImageSettings()">
+                    <option value="0">0°</option>
+                    <option value="90">90°</option>
+                    <option value="180">180°</option>
+                    <option value="270">270°</option>
+                </select>
             </div>
         </div>
 
@@ -520,6 +528,7 @@
 
                         document.getElementById('white_balance').value = data.settings.white_balance;
                         document.getElementById('auto_wb').checked = data.settings.auto_wb;
+                        document.getElementById('rotation').value = data.settings.rotation || 0;
 
                         // Update range displays
                         updateRangeVal(document.getElementById('brightness'), 'val-brightness');
@@ -619,7 +628,8 @@
                 contrast: document.getElementById('contrast').value,
                 saturation: document.getElementById('saturation').value,
                 white_balance: document.getElementById('white_balance').value,
-                auto_wb: document.getElementById('auto_wb').checked
+                auto_wb: document.getElementById('auto_wb').checked,
+                rotation: document.getElementById('rotation').value
             };
 
             fetch('/api/settings', {
@@ -764,7 +774,11 @@
                 'status-stopped': "STOPPED",
                 'status-checking': "Checking...",
                 'stop-to-live': "Stop Timelapse to use Live View",
-                'update-success': "General settings updated!"
+                'update-success': "General settings updated!",
+                'rotation': "Camera Rotation",
+                'dl-zip': "Download day as ZIP",
+                'del-day': "Delete entire day",
+                'confirm-del': "Are you sure you want to PERMANENTLY delete all images from {date}? This cannot be undone."
             },
             'es': {
                 'title': "Timelapse de Cámara de Tony",
@@ -799,7 +813,11 @@
                 'status-stopped': "DETENIDO",
                 'status-checking': "Comprobando...",
                 'stop-to-live': "Detén el Timelapse para Vista en Vivo",
-                'update-success': "¡Configuración general actualizada!"
+                'update-success': "¡Configuración general actualizada!",
+                'rotation': "Rotación de Cámara",
+                'dl-zip': "Descargar día como ZIP",
+                'del-day': "Eliminar día completo",
+                'confirm-del': "¿Estás seguro de que quieres eliminar PERMANENTEMENTE todas las imágenes del {date}? Esta acción no se puede deshacer."
             }
         };
 
