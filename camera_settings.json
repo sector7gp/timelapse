@@ -1,0 +1,10 @@
+{
+    "interval": 300,
+    "width": 1920,
+    "height": 1080,
+    "brightness": 100,
+    "contrast": 115,
+    "saturation": 120,
+    "white_balance": 5000,
+    "auto_wb": false
+}
