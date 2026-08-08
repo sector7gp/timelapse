@@ -7,11 +7,18 @@ All notable changes to this project will be documented in this file.
 - **HTTPS Support (Documentation)**: Added Nginx reverse proxy templates and instructions for enabling secure access via Let's Encrypt.
 - **Nginx Config**: Included `nginx/timelapse.conf` for standard reverse proxying with WebSocket support for MJPEG streams.
 
+### Security
+- **Path traversal in the gallery endpoints**: `date_str` was joined onto the images directory without validation, so `..` escaped it — `GET /api/gallery/../download` returned a ZIP of every `.jpg` found by walking the parent directory. The 8-digit check that the delete handler already performed is now shared by all gallery endpoints via `resolve_day_dir()`.
+
+### Changed
+- **Documented the Cloudflare Tunnel + Access setup** as the project's actual remote-access path. The Nginx template remains in the repo as an unmaintained alternative; the README now notes the two changes it needs before it will start.
+
 ## [1.3.0] - 2026-03-07
 ### Added
 - **Camera Rotation**: Added support for 0°, 90°, 180°, and 270° rotation. This affects both the Live View preview and the saved timelapse images.
 - **Rotation Persistent Setting**: The rotation choice is saved to `camera_settings.json` and persisted across restarts.
 - **Bilingual Rotation UI**: Localized rotation labels in English and Spanish.
+
 ## [1.2.0] - 2026-02-12
 ### Added
 - **ZIP Download**: Users can now download a whole day of captures in a single ZIP file directly from the Gallery.
