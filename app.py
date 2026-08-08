@@ -22,6 +22,16 @@ logging.getLogger('werkzeug').setLevel(logging.WARNING)
 OUTPUT_DIR = os.path.abspath("images")
 camera = TimelapseController(output_dir=OUTPUT_DIR)
 
+def resolve_day_dir(date_str):
+    """Maps a YYYYMMDD string to its folder, or None if it isn't a valid date name.
+
+    Guards every gallery endpoint against path traversal: without this, a
+    date_str of ".." escapes OUTPUT_DIR.
+    """
+    if not (len(date_str) == 8 and date_str.isdigit()):
+        return None
+    return os.path.join(OUTPUT_DIR, date_str)
+
 def get_git_branch():
     """Returns the current git branch name."""
     try:
@@ -118,10 +128,12 @@ def get_gallery_dates():
 def get_gallery_images(date_str):
     """List all images in a specific date folder."""
     try:
-        day_dir = os.path.join(OUTPUT_DIR, date_str)
+        day_dir = resolve_day_dir(date_str)
+        if day_dir is None:
+            return jsonify({'error': 'Invalid date format'}), 400
         if not os.path.exists(day_dir):
             return jsonify([])
-        
+
         images = [f for f in os.listdir(day_dir) if f.endswith('.jpg')]
         # Sort by filename which includes time and sequence
         return jsonify(sorted(images, reverse=True))
@@ -144,11 +156,10 @@ def latest_image():
 def delete_gallery_day(date_str):
     """Delete a specific date folder and all its images."""
     try:
-        # Safety check: ensure date_str is exactly 8 digits
-        if not (len(date_str) == 8 and date_str.isdigit()):
+        day_dir = resolve_day_dir(date_str)
+        if day_dir is None:
             return jsonify({'error': 'Invalid date format'}), 400
-            
-        day_dir = os.path.join(OUTPUT_DIR, date_str)
+
         if os.path.exists(day_dir):
             shutil.rmtree(day_dir)
             return jsonify({'success': True})
@@ -161,7 +172,9 @@ def delete_gallery_day(date_str):
 def download_gallery_day(date_str):
     """Compress a daily folder into a ZIP and stream it."""
     try:
-        day_dir = os.path.join(OUTPUT_DIR, date_str)
+        day_dir = resolve_day_dir(date_str)
+        if day_dir is None:
+            return "Invalid date format", 400
         if not os.path.exists(day_dir):
             return "Folder not found", 404
 
