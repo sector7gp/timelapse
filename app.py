@@ -2,7 +2,11 @@ from flask import Flask, render_template, jsonify, request, send_from_directory,
 import logging
 import sys
 import os
+import shutil
+import io
+import zipfile
 from camera import TimelapseController
+import subprocess
 
 # Configure logging
 logging.basicConfig(
@@ -18,12 +22,22 @@ logging.getLogger('werkzeug').setLevel(logging.WARNING)
 OUTPUT_DIR = os.path.abspath("images")
 camera = TimelapseController(output_dir=OUTPUT_DIR)
 
+def resolve_day_dir(date_str):
+    """Maps a YYYYMMDD string to its folder, or None if it isn't a valid date name.
+
+    Guards every gallery endpoint against path traversal: without this, a
+    date_str of ".." escapes OUTPUT_DIR.
+    """
+    if not (len(date_str) == 8 and date_str.isdigit()):
+        return None
+    return os.path.join(OUTPUT_DIR, date_str)
+
 def get_git_branch():
     """Returns the current git branch name."""
     try:
         return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
     except Exception:
-        return "v1.1" # Fallback
+        return "v1.2" # Fallback
 
 @app.route('/')
 def index():
@@ -45,7 +59,8 @@ def get_status():
             'contrast': camera.contrast,
             'saturation': camera.saturation,
             'white_balance': camera.white_balance,
-            'auto_wb': camera.auto_wb
+            'auto_wb': camera.auto_wb,
+            'rotation': camera.rotation
         }
     })
 
@@ -79,7 +94,8 @@ def update_image_settings():
             contrast=data.get('contrast', 100),
             saturation=data.get('saturation', 100),
             white_balance=data.get('white_balance', 4000),
-            auto_wb=data.get('auto_wb', False)
+            auto_wb=data.get('auto_wb', False),
+            rotation=data.get('rotation', 0)
         )
     except ValueError:
         return jsonify({'error': 'Invalid values'}), 400
@@ -112,10 +128,12 @@ def get_gallery_dates():
 def get_gallery_images(date_str):
     """List all images in a specific date folder."""
     try:
-        day_dir = os.path.join(OUTPUT_DIR, date_str)
+        day_dir = resolve_day_dir(date_str)
+        if day_dir is None:
+            return jsonify({'error': 'Invalid date format'}), 400
         if not os.path.exists(day_dir):
             return jsonify([])
-        
+
         images = [f for f in os.listdir(day_dir) if f.endswith('.jpg')]
         # Sort by filename which includes time and sequence
         return jsonify(sorted(images, reverse=True))
@@ -133,6 +151,49 @@ def latest_image():
         return send_from_directory(OUTPUT_DIR, camera.latest_image_path)
     else:
         return "No image captured yet", 404
+
+@app.route('/api/gallery/<date_str>', methods=['DELETE'])
+def delete_gallery_day(date_str):
+    """Delete a specific date folder and all its images."""
+    try:
+        day_dir = resolve_day_dir(date_str)
+        if day_dir is None:
+            return jsonify({'error': 'Invalid date format'}), 400
+
+        if os.path.exists(day_dir):
+            shutil.rmtree(day_dir)
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Folder not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/gallery/<date_str>/download')
+def download_gallery_day(date_str):
+    """Compress a daily folder into a ZIP and stream it."""
+    try:
+        day_dir = resolve_day_dir(date_str)
+        if day_dir is None:
+            return "Invalid date format", 400
+        if not os.path.exists(day_dir):
+            return "Folder not found", 404
+
+        # Create ZIP in memory
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(day_dir):
+                for file in files:
+                    if file.endswith('.jpg'):
+                        zf.write(os.path.join(root, file), file)
+        
+        memory_file.seek(0)
+        return Response(
+            memory_file,
+            mimetype="application/zip",
+            headers={"Content-disposition": f"attachment; filename=timelapse_{date_str}.zip"}
+        )
+    except Exception as e:
+        return str(e), 500
 
 if __name__ == '__main__':
     # Listen on all interfaces so it's accessible from outside the Pi

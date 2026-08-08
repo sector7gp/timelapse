@@ -29,6 +29,7 @@ class TimelapseController:
         # self.exposure = 0 # 0 usually means auto or default, depends on camera
         self.white_balance = 4000 # Auto usually, but specific values needed for manual
         self.auto_wb = True
+        self.rotation = 0 # 0, 90, 180, 270
         
         # State
         self.latest_image_path = None
@@ -55,6 +56,7 @@ class TimelapseController:
                     self.saturation = data.get('saturation', self.saturation)
                     self.white_balance = data.get('white_balance', self.white_balance)
                     self.auto_wb = data.get('auto_wb', self.auto_wb)
+                    self.rotation = data.get('rotation', self.rotation)
                     logger.info("Settings loaded from file.")
         except Exception as e:
             logger.error(f"Failed to load settings: {e}")
@@ -69,7 +71,8 @@ class TimelapseController:
                 'contrast': self.contrast,
                 'saturation': self.saturation,
                 'white_balance': self.white_balance,
-                'auto_wb': self.auto_wb
+                'auto_wb': self.auto_wb,
+                'rotation': self.rotation
             }
             with open(self.settings_file, 'w') as f:
                 json.dump(data, f, indent=4)
@@ -103,7 +106,7 @@ class TimelapseController:
             self.save_settings()
             logger.info(f"Settings updated: Interval={self.interval/60}m, Res={self.width}x{self.height}")
 
-    def update_image_settings(self, brightness, contrast, saturation, white_balance, auto_wb):
+    def update_image_settings(self, brightness, contrast, saturation, white_balance, auto_wb, rotation=None):
         with self.lock:
             self.brightness = int(brightness)
             self.contrast = int(contrast)
@@ -111,9 +114,11 @@ class TimelapseController:
             # exposure removed
             self.white_balance = int(white_balance)
             self.auto_wb = bool(auto_wb)
+            if rotation is not None:
+                self.rotation = int(rotation)
             self.settings_changed = True
             self.save_settings()
-            logger.debug(f"Image settings updated: B={self.brightness} C={self.contrast} S={self.saturation}")
+            logger.debug(f"Image settings updated: B={self.brightness} Rot={self.rotation}")
 
     def _apply_camera_settings(self, cap):
         """Applies current settings to the OpenCV capture object."""
@@ -133,6 +138,16 @@ class TimelapseController:
                 
         except Exception as e:
             logger.warning(f"Error applying settings: {e}")
+
+    def _rotate_frame(self, frame):
+        """Rotates the frame based on self.rotation setting."""
+        if self.rotation == 90:
+            return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        elif self.rotation == 180:
+            return cv2.rotate(frame, cv2.ROTATE_180)
+        elif self.rotation == 270:
+            return cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        return frame
 
     def get_stream(self):
         """Generator function for MJPEG stream. Pauses timelapse loop if running."""
@@ -167,6 +182,8 @@ class TimelapseController:
                 if not ret:
                     time.sleep(0.1)
                     continue
+                
+                frame = self._rotate_frame(frame)
                 
                 ret, buffer = cv2.imencode('.jpg', frame)
                 frame = buffer.tobytes()
@@ -210,6 +227,7 @@ class TimelapseController:
             
             ret, frame = cap.read()
             if ret:
+                frame = self._rotate_frame(frame)
                 now = datetime.now()
                 date_str = now.strftime("%Y%m%d")
                 time_str = now.strftime("%H%M%S")

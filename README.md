@@ -73,6 +73,29 @@ To make the script start automatically when the Pi boots:
 
 To check logs: `journalctl -u timelapse.service -f`
 
+## Enabling HTTPS (Nginx + Let's Encrypt)
+
+For secure access, it is recommended to use Nginx as a reverse proxy with Let's Encrypt.
+
+1.  **Install Nginx and Certbot**:
+    ```bash
+    sudo apt update
+    sudo apt install nginx certbot python3-certbot-nginx
+    ```
+
+2.  **Configure Nginx**:
+    Copy the template from `nginx/timelapse.conf` to `/etc/nginx/sites-available/timelapse` and update your domain name. Then enable it:
+    ```bash
+    sudo ln -s /etc/nginx/sites-available/timelapse /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl restart nginx
+    ```
+
+3.  **Get SSL Certificate**:
+    ```bash
+    sudo certbot --nginx -d your_domain.com
+    ```
+
 
 ## API Reference
 
